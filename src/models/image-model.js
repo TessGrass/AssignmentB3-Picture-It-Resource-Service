@@ -2,7 +2,12 @@ import mongoose from 'mongoose'
 const Schema = mongoose.Schema
 
 const imageSchema = new Schema({
-  data: {
+  userId: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  imgId: {
     type: String,
     required: true,
     trim: true

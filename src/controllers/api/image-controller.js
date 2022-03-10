@@ -1,6 +1,7 @@
 
 import jwt from 'jsonwebtoken'
 import createError from 'http-errors'
+import fetch from 'node-fetch'
 /**
  * Represents a Image Controller class.
  */
@@ -35,7 +36,6 @@ export class ImageController {
       console.log('error in autenticateJWT')
       const err = createError(401)
       err.message = 'Access token invalid or not provided.'
-      console.log(error)
       next(err)
     }
   }
@@ -49,7 +49,6 @@ export class ImageController {
    */
   getImage (req, res, next) {
     console.log(req.body)
-    console.log()
   }
 
   /**
@@ -60,7 +59,35 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async postImage (req, res, next) {
-    console.log(req.user)
-    
+    console.log('postimage')
+    try {
+      console.log(req.user) // req.body är bilden base64
+      if (!req.body.data || !req.body.contentType) {
+        throw new Error('image data and/or content type missing')
+      }
+      const imgData = {
+        data: req.body.data,
+        contentType: req.body.contentType
+      }
+
+      const fetchedData = await fetch('https://courselab.lnu.se/picture-it/images/api/v1/images', {
+        method: 'POST',
+        headers: {
+          'Content-type': 'application/json',
+          'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+        },
+        body: JSON.stringify(imgData)
+      })
+      res
+        .status(201)
+
+      console.log('ovanför fetcheddata')
+      console.log(await fetchedData.json())
+    } catch (error) {
+      // Authentication failed.
+      const err = createError(500)
+      err.message = 'An unexpected condition was encountered.'
+      next(err)
+    }
   }
 }
