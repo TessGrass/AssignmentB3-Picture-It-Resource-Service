@@ -23,14 +23,14 @@ export class ImageController {
     }
 
     try {
-      console.log('inside try i athenticateJWT')
+      console.log('inside try i authenticateJWT')
       const jwtPayload = jwt.verify(authorization[1], publicKey)
       req.user = {
-        email: jwtPayload.email,
         username: jwtPayload.username,
+        email: jwtPayload.email,
         id: jwtPayload.id
       }
-      console.log(jwtPayload)
+      next()
     } catch (error) {
       console.log('error in autenticateJWT')
       const err = createError(401)
@@ -38,5 +38,29 @@ export class ImageController {
       console.log(error)
       next(err)
     }
+  }
+
+  /**
+   * Fetching image from authorized owner.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   */
+  getImage (req, res, next) {
+    console.log(req.body)
+    console.log()
+  }
+
+  /**
+   * Post image to Image service.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async postImage (req, res, next) {
+    console.log(req.user)
+    
   }
 }
