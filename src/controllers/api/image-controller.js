@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken'
 import createError from 'http-errors'
 import fetch from 'node-fetch'
+import { Image } from '../../models/image-model.js'
 /**
  * Represents a Image Controller class.
  */
@@ -80,9 +81,18 @@ export class ImageController {
       })
       res
         .status(201)
-
       console.log('ovanför fetcheddata')
-      console.log(await fetchedData.json())
+      const data = await fetchedData.json()
+      console.log(data)
+
+      const imageSchema = new Image({
+        userId: req.user.id,
+        imgId: data.id,
+        imgUrl: data.imageUrl,
+        contentType: data.contentType
+      })
+      await imageSchema.save()
+
     } catch (error) {
       // Authentication failed.
       const err = createError(500)
