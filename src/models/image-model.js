@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 const Schema = mongoose.Schema
 
 const imageSchema = new Schema({
+  userName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   userId: {
     type: String,
     required: true,

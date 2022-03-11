@@ -15,7 +15,7 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   authenticateJWT (req, res, next) {
-    console.log('authenticateJWT')
+    console.log('-----authenticateJWT-----')
     const publicKey = Buffer.from(process.env.ACCESS_TOKEN_PUBLIC, 'base64')
     const authorization = req.headers.authorization?.split(' ')
 
@@ -41,17 +41,6 @@ export class ImageController {
     }
   }
 
- /*  async authorizeUser (req, res, next) {
-    try {
-      await Image.authorizeUser(req.params.id, req.body.id, req.session.username)
-
-      next()
-    } catch (error) {
-      error.status = 403
-      next(error)
-    }
-  } */
-
   /**
    * Fetching image from authorized owner.
    *
@@ -60,19 +49,23 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async getAllImages (req, res, next) {
-    console.log('GetAllImages')
-    console.log(req.user.id)
-    await Image.findById(req.user.id)
-    const usersImages = await Image.find({ userId: req.user.id })
-    console.log(usersImages)
+    try {
+      console.log('GetAllImages')
+      console.log(req.user.id)
+      await Image.findById(req.user.id)
+      const usersImages = await Image.find({ userId: req.user.id })
+      console.log(usersImages)
 
-    res
-      .status(200)
-      .json(usersImages)
+      res
+        .status(200)
+        .json(usersImages)
+    } catch (error) {
+      next(error)
+    }
   }
 
   /**
-   * Get A specific image.
+   * Get a specific image.
    *
    * @param {object} req - Express request object.
    * @param {object} res  - Express respons object.
@@ -82,20 +75,23 @@ export class ImageController {
    */
   async getOneImage (req, res, next, id) {
     try {
-      // Get the task.
-      const image = await Image.findById(id)
+      console.log('-----getOneImage------')
+      const imageId = Object.values(req.params)
+      console.log(imageId)
 
-      // If no task found send a 404 (Not Found).
-      if (!image) {
+      const image = await Image.find({ imgId: imageId })
+      console.log(image)
+      if (image.length === 0) {
         next(createError(404))
         return
       }
-      next()
+      res
+        .status(200)
+        .json(image)
     } catch (error) {
       next(error)
     }
   }
-
 
   /**
    * Post image to Image service.
@@ -105,7 +101,7 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async postImage (req, res, next) {
-    console.log('postimage')
+    console.log('-----postimage-----')
     try {
       // console.log(req.user) // req.body är bilden base64
       if (!req.body.data || !req.body.contentType) {
@@ -130,6 +126,7 @@ export class ImageController {
       const data = await fetchedData.json()
 
       const imageSchema = new Image({
+        userName: req.user.username,
         userId: req.user.id,
         imgId: data.id,
         imgUrl: data.imageUrl,
