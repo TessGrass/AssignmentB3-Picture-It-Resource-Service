@@ -41,6 +41,17 @@ export class ImageController {
     }
   }
 
+ /*  async authorizeUser (req, res, next) {
+    try {
+      await Image.authorizeUser(req.params.id, req.body.id, req.session.username)
+
+      next()
+    } catch (error) {
+      error.status = 403
+      next(error)
+    }
+  } */
+
   /**
    * Fetching image from authorized owner.
    *
@@ -48,9 +59,43 @@ export class ImageController {
    * @param {object} res  - Express respons object.
    * @param {Function} next - Express next middleware function.
    */
-  getImage (req, res, next) {
-    console.log(req.body)
+  async getAllImages (req, res, next) {
+    console.log('GetAllImages')
+    console.log(req.user.id)
+    await Image.findById(req.user.id)
+    const usersImages = await Image.find({ userId: req.user.id })
+    console.log(usersImages)
+
+    res
+      .status(200)
+      .json(usersImages)
   }
+
+  /**
+   * Get A specific image.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   * @param {string} id  - The value of the id.
+   * @returns
+   */
+  async getOneImage (req, res, next, id) {
+    try {
+      // Get the task.
+      const image = await Image.findById(id)
+
+      // If no task found send a 404 (Not Found).
+      if (!image) {
+        next(createError(404))
+        return
+      }
+      next()
+    } catch (error) {
+      next(error)
+    }
+  }
+
 
   /**
    * Post image to Image service.
@@ -62,7 +107,7 @@ export class ImageController {
   async postImage (req, res, next) {
     console.log('postimage')
     try {
-      console.log(req.user) // req.body är bilden base64
+      // console.log(req.user) // req.body är bilden base64
       if (!req.body.data || !req.body.contentType) {
         throw new Error('image data and/or content type missing')
       }
@@ -81,9 +126,8 @@ export class ImageController {
       })
       res
         .status(201)
-      console.log('ovanför fetcheddata')
+        .json(imgData)
       const data = await fetchedData.json()
-      console.log(data)
 
       const imageSchema = new Image({
         userId: req.user.id,
@@ -91,10 +135,9 @@ export class ImageController {
         imgUrl: data.imageUrl,
         contentType: data.contentType
       })
-      await imageSchema.save()
 
+      await imageSchema.save()
     } catch (error) {
-      // Authentication failed.
       const err = createError(500)
       err.message = 'An unexpected condition was encountered.'
       next(err)
