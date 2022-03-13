@@ -22,7 +22,16 @@ try {
   // Register routes.
   app.use('/', router)
   app.use(function (err, req, res, next) {
-    err.status = err.status || 500
+    console.log('-----inside error in server.js-----')
+    if (err.status === 401) {
+      res.status(401).send('Access token invalid or not provided.')
+    } else if (err.status === 403) {
+      res.status(403).send('The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.')
+    } else if (err.status === 404) {
+      res.status(404).send('The requested resource was not found.')
+    } else if (err.status === 500) {
+      res.status(500).send('An unexpected condition was encountered.')
+    }
 
     if (req.app.get('env') !== 'development') {
       return res
@@ -35,7 +44,7 @@ try {
 
     // Development only!
     // Only providing detailed error in development.
-    return res
+    /* return res
       .status(err.status)
       .json({
         status: err.status,
@@ -48,7 +57,7 @@ try {
             }
           : null,
         stack: err.stack
-      })
+      }) */
   })
 
   // Starts the HTTP server listening for connections.
