@@ -45,22 +45,27 @@ export class ImageController {
    */
   async authorizeUser (req, res, next) {
     console.log('----authorizeUser-----')
-    const image = await Image.findOne({ imgId: req.params.id })
-    if (image !== null) {
-      if (image.userId === req.user.id) {
-        console.log('userid stämmer överens')
+    if (req.body.contentType === undefined || req.body.data === undefined) {
+      const err = createError(400)
+      next(err)
+    } else {
+      const image = await Image.findOne({ imgId: req.params.id })
+      if (image !== null) {
+        if (image.userId === req.user.id) {
+          console.log('userid stämmer överens')
+        } else {
+          console.log('403 i authorize')
+          const err = createError(403)
+          next(err)
+        }
       } else {
-        console.log('403 i authorize')
-        const err = createError(403)
+        console.log('404 i authorize')
+        const err = createError(404)
         next(err)
       }
-    } else {
-      console.log('404 i authorize')
-      const err = createError(404)
-      next(err)
+      res.locals.image = image
+      next()
     }
-    res.locals.image = image
-    next()
   }
 
   /**
