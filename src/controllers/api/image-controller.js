@@ -21,7 +21,7 @@ export class ImageController {
       const authorization = req.headers.authorization?.split(' ')
 
       if (authorization?.[0] !== 'Bearer') {
-      next(createError(401))
+        next(createError(401))
       }
       const jwtPayload = jwt.verify(authorization[1], publicKey)
       req.user = {
@@ -37,6 +37,33 @@ export class ImageController {
   }
 
   /**
+   * Authorize user.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async authorizeUser (req, res, next) {
+    console.log('----authorizeUser-----')
+    const image = await Image.findOne({ imgId: req.params.id })
+    if (image !== null) {
+      if (image.userId === req.user.id) {
+        console.log('userid stämmer överens')
+      } else {
+        console.log('403 i authorize')
+        const err = createError(403)
+        next(err)
+      }
+    } else {
+      console.log('404 i authorize')
+      const err = createError(404)
+      next(err)
+    }
+    res.locals.image = image
+    next()
+  }
+
+  /**
    * Fetching image from authorized owner.
    *
    * @param {object} req - Express request object.
@@ -46,7 +73,6 @@ export class ImageController {
   async getAllImages (req, res, next) {
     try {
       console.log('----getAllImages-----')
-      // await Image.findById(req.user.id) // VAD GÖR DU??
       const usersImages = await Image.find({ userId: req.user.id })
       res
         .status(200)
@@ -62,26 +88,30 @@ export class ImageController {
    * @param {object} req - Express request object.
    * @param {object} res  - Express respons object.
    * @param {Function} next - Express next middleware function.
-   * @param {string} id  - The value of the id.
    */
-  async getSingleImage (req, res, next, id) {
+  async getSpecificImage (req, res, next) {
     try {
       console.log('-----getSingleImage------')
-      const imageId = Object.values(req.params)
-      const image = await Image.find({ imgId: imageId })
-      if (image.length === 0) {
+      // const img = res.locals.image
+      console.log(res.locals.image.imgId)
+      const image = await Image.find({ imgId: res.locals.image.imgId })
+      res
+        .status(200)
+        .json(image)
+      /* const imageId = Object.values(req.params)
+      /* if (image.length === 0) {
         const err = createError(404)
         next(err)
         return
-      }
-      if (image.find(i => i.userId === req.user.id)) {
+      } */
+      /* if (image.find(i => i.userId === req.user.id)) {
         res
           .status(200)
           .json(image)
       } else {
         const err = createError(403)
         next(err)
-      }
+      } */
     } catch (error) {
       next(error)
     }
@@ -97,14 +127,14 @@ export class ImageController {
   async postImage (req, res, next) {
     console.log('-----postImage-----')
     try {
-      if (!req.body.data || !req.body.contentType) {
-        throw new Error('image data and/or content type missing')
+      if (req.body.contentType === undefined || req.body.data === undefined) {
+        const err = createError(400)
+        next(err)
       }
       const imgData = {
         data: req.body.data,
         contentType: req.body.contentType
       }
-      console.log(imgData)
       const fetchedData = await fetch('https://courselab.lnu.se/picture-it/images/api/v1/images', {
         method: 'POST',
         headers: {
@@ -142,31 +172,33 @@ export class ImageController {
   async patchImage (req, res, next) {
     try {
       console.log('-----patchImage-----')
-      const image = await Image.findOne({ imgId: req.params.id })
-      // && image.userId === req.user.id
-      if (image !== null) {
-        if (image.userId === req.user.id) {
-          const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-type': 'application/json',
-              'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
-            },
-            body: JSON.stringify(req.body)
-          })
-          if (fetchedData) {
-            const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
-            await patchImage.save()
-            res.sendStatus(204)
-          }
-        } else {
+      console.log(req.params)
+      const image = res.locals.image
+      /* const image = await Image.findOne({ imgId: req.params.id })
+      console.log(image) */
+      /* if (image !== null) {
+        if (image.userId === req.user.id) { */
+      const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-type': 'application/json',
+          'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+        },
+        body: JSON.stringify(req.body)
+      })
+      if (fetchedData) {
+        const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
+        await patchImage.save()
+        res.sendStatus(204)
+      }
+    /* } else {
           const err = createError(403)
           next(err)
         }
       } else {
         const err = createError(404)
         next(err)
-      }
+      } */
     } catch (error) {
       const err = createError(500)
       next(err)
@@ -187,36 +219,36 @@ export class ImageController {
         const err = createError(400)
         next(err)
       } else {
-        const image = await Image.findOne({ imgId: req.params.id })
-        if (image !== null) {
-          if (image.userId === req.user.id) {
-            const body = {
-              data: req.body.data,
-              contentType: req.body.contentType,
-              description: req.body.description ? req.body.description : ''
-            }
-            const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
-              method: 'PUT',
-              headers: {
-                'Content-type': 'application/json',
-                'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
-              },
-              body: JSON.stringify(body)
-            })
-            if (fetchedData) {
-              const putImage = await Image.findByIdAndUpdate(image.id, req.body, { runValidators: true })
-              await putImage.save()
-              res.sendStatus(204)
-            }
-          } else {
+        // const image = await Image.findOne({ imgId: req.params.id })
+        const image = res.locals.image
+        /* if (image !== null) { */
+        /* if (image.userId === req.user.id) { */
+        const body = {
+          data: req.body.data,
+          contentType: req.body.contentType,
+          description: req.body.description ? req.body.description : ''
+        }
+        const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-type': 'application/json',
+            'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+          },
+          body: JSON.stringify(body)
+        })
+        if (fetchedData) {
+          const putImage = await Image.findByIdAndUpdate(image.id, req.body, { runValidators: true })
+          await putImage.save()
+          res.sendStatus(204)
+        }
+      } /* else {
             const err = createError(403)
             next(err)
-          }
-        } else {
+          } */
+      /* } else {
           const err = createError(404)
           next(err)
-        }
-      }
+        } */
     } catch (error) {
       const err = createError(500)
       next(err)
@@ -229,36 +261,35 @@ export class ImageController {
    * @param {object} req - Express request object.
    * @param {object} res  - Express respons object.
    * @param {Function} next - Express next middleware function.
-   * @param {string} id  - The value of the id.
    */
-  async deleteSingleImage (req, res, next, id) {
+  async deleteSpecificImage (req, res, next) {
     try {
-      console.log('-----deleteSingleImage-----')
-      const image = await Image.findOne({ imgId: req.params.id })
+      const image = res.locals.image
+      console.log('-----deleteSpecificImage-----')
+      /* const image = await Image.findOne({ imgId: req.params.id }) */
 
-      if (image !== null) {
-        if (image.userId === req.user.id) {
-          const fetchedData = await fetch('https://courselab.lnu.se/picture-it/images/api/v1/images', {
-            method: 'DELETE',
-            headers: {
-              'Content-type': 'application/json',
-              'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
-            },
-            body: JSON.stringify(req.params.id)
-          })
-          if (fetchedData) {
-            await Image.findByIdAndDelete(image.id)
-            // await Image.findOneAndDelete({ id: req.params.id })
-            res.sendStatus(204)
-          }
-        } else {
+      /* if (image !== null) { */
+      /* if (image.userId === req.user.id) { */
+      const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-type': 'application/json',
+          'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+        },
+        body: JSON.stringify(req.params.id)
+      })
+      if (fetchedData) {
+        await Image.findByIdAndDelete(image.id)
+        res.sendStatus(204)
+      }
+      /* } else {
           const err = createError(403)
           next(err)
-        }
-      } else {
+        } */
+      /* } else {
         const err = createError(404)
         next(err)
-      }
+      } */
     } catch (error) {
       const err = createError(500)
       next(err)
