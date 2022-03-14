@@ -23,13 +23,15 @@ try {
   app.use('/', router)
   app.use(function (err, req, res, next) {
     console.log('-----inside error in server.js-----')
-    if (err.status === 401) {
+    if (err.status === 400) {
+      res.status(400).send('The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error.')
+    } else if (err.status === 401) {
       res.status(401).send('Access token invalid or not provided.')
     } else if (err.status === 403) {
       res.status(403).send('The request contained valid data and was understood by the server, but the server is refusing action due to the authenticated user not having the necessary permissions for the resource.')
     } else if (err.status === 404) {
       res.status(404).send('The requested resource was not found.')
-    } else if (err.status === 500) {
+    } else if (err.status || err.status === 500) {
       res.status(500).send('An unexpected condition was encountered.')
     }
 

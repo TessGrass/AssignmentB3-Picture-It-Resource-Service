@@ -100,12 +100,9 @@ export class ImageController {
       if (!req.body.data || !req.body.contentType) {
         throw new Error('image data and/or content type missing')
       }
-      const description = req.body.description
-
       const imgData = {
         data: req.body.data,
-        contentType: req.body.contentType,
-        description: req.body.description
+        contentType: req.body.contentType
       }
       console.log(imgData)
       const fetchedData = await fetch('https://courselab.lnu.se/picture-it/images/api/v1/images', {
@@ -116,13 +113,13 @@ export class ImageController {
         },
         body: JSON.stringify(imgData)
       })
-      const data = await fetchedData.json() // description blir undefined i data. ORIMLIGT!!
+      const data = await fetchedData.json()
       const imageSchema = new Image({
         userName: req.user.username,
         userId: req.user.id,
         imgId: data.id,
         imgUrl: data.imageUrl,
-        description: description,
+        description: req.body.description,
         contentType: data.contentType
       })
       res
@@ -136,7 +133,8 @@ export class ImageController {
   }
 
   /**
-   * 
+   * Patch an image.
+   *
    * @param {object} req - Express request object.
    * @param {object} res  - Express respons object.
    * @param {Function} next - Express next middleware function.
@@ -145,12 +143,9 @@ export class ImageController {
     try {
       console.log('-----patchImage-----')
       const image = await Image.findOne({ imgId: req.params.id })
-      console.log(image.userId)
-      console.log(req.user.id)
       // && image.userId === req.user.id
       if (image !== null) {
         if (image.userId === req.user.id) {
-          console.log('innanför')
           const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
             method: 'PATCH',
             headers: {
@@ -162,6 +157,7 @@ export class ImageController {
           if (fetchedData) {
             const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
             await patchImage.save()
+            res.sendStatus(204)
           }
         } else {
           const err = createError(403)
@@ -170,6 +166,56 @@ export class ImageController {
       } else {
         const err = createError(404)
         next(err)
+      }
+    } catch (error) {
+      const err = createError(500)
+      next(err)
+    }
+  }
+
+  /**
+   * Change image with put verb.
+   *
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async putImage (req, res, next) {
+    console.log('-----putImage-----')
+    try {
+      if (req.body.contentType === undefined || req.body.data === undefined) {
+        const err = createError(400)
+        next(err)
+      } else {
+        const image = await Image.findOne({ imgId: req.params.id })
+        if (image !== null) {
+          if (image.userId === req.user.id) {
+            const body = {
+              data: req.body.data,
+              contentType: req.body.contentType,
+              description: req.body.description ? req.body.description : ''
+            }
+            const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-type': 'application/json',
+                'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+              },
+              body: JSON.stringify(body)
+            })
+            if (fetchedData) {
+              const putImage = await Image.findByIdAndUpdate(image.id, req.body, { runValidators: true })
+              await putImage.save()
+              res.sendStatus(204)
+            }
+          } else {
+            const err = createError(403)
+            next(err)
+          }
+        } else {
+          const err = createError(404)
+          next(err)
+        }
       }
     } catch (error) {
       const err = createError(500)
