@@ -8,4 +8,5 @@ router.get('/images', controller.authenticateJWT, (req, res, next) => controller
 router.get('/images/:id', controller.authenticateJWT, (req, res, next) => controller.getSingleImage(req, res, next))
 // router.param('id', controller.authenticateJWT, (req, res, next, id) => controller.getOneImage(req, res, next, id))
 router.post('/images', controller.authenticateJWT, (req, res, next) => controller.postImage(req, res, next))
+router.patch('/images/:id', controller.authenticateJWT, (req, res, next) => controller.patchImage(req, res, next))
 router.delete('/images/:id', controller.authenticateJWT, (req, res, next) => controller.deleteSingleImage(req, res, next))

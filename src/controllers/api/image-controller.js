@@ -16,14 +16,13 @@ export class ImageController {
    */
   authenticateJWT (req, res, next) {
     console.log('-----authenticateJWT-----')
-    const publicKey = Buffer.from(process.env.ACCESS_TOKEN_PUBLIC, 'base64')
-    const authorization = req.headers.authorization?.split(' ')
-
-    if (authorization?.[0] !== 'Bearer') {
-      next(createError(401))
-    }
-
     try {
+      const publicKey = Buffer.from(process.env.ACCESS_TOKEN_PUBLIC, 'base64')
+      const authorization = req.headers.authorization?.split(' ')
+
+      if (authorization?.[0] !== 'Bearer') {
+      next(createError(401))
+      }
       const jwtPayload = jwt.verify(authorization[1], publicKey)
       req.user = {
         username: jwtPayload.username,
@@ -47,7 +46,7 @@ export class ImageController {
   async getAllImages (req, res, next) {
     try {
       console.log('----getAllImages-----')
-      await Image.findById(req.user.id) // VAD GÖR DU??
+      // await Image.findById(req.user.id) // VAD GÖR DU??
       const usersImages = await Image.find({ userId: req.user.id })
       res
         .status(200)
@@ -101,11 +100,14 @@ export class ImageController {
       if (!req.body.data || !req.body.contentType) {
         throw new Error('image data and/or content type missing')
       }
+      const description = req.body.description
+
       const imgData = {
         data: req.body.data,
-        contentType: req.body.contentType
+        contentType: req.body.contentType,
+        description: req.body.description
       }
-
+      console.log(imgData)
       const fetchedData = await fetch('https://courselab.lnu.se/picture-it/images/api/v1/images', {
         method: 'POST',
         headers: {
@@ -114,19 +116,18 @@ export class ImageController {
         },
         body: JSON.stringify(imgData)
       })
-      res
-        .status(201)
-        .json(imgData)
-      const data = await fetchedData.json()
-
+      const data = await fetchedData.json() // description blir undefined i data. ORIMLIGT!!
       const imageSchema = new Image({
         userName: req.user.username,
         userId: req.user.id,
         imgId: data.id,
         imgUrl: data.imageUrl,
+        description: description,
         contentType: data.contentType
       })
-
+      res
+        .status(201)
+        .json(imageSchema)
       await imageSchema.save()
     } catch (error) {
       const err = createError(500)
@@ -135,7 +136,49 @@ export class ImageController {
   }
 
   /**
-   * Deletes an image.
+   * 
+   * @param {object} req - Express request object.
+   * @param {object} res  - Express respons object.
+   * @param {Function} next - Express next middleware function.
+   */
+  async patchImage (req, res, next) {
+    try {
+      console.log('-----patchImage-----')
+      const image = await Image.findOne({ imgId: req.params.id })
+      console.log(image.userId)
+      console.log(req.user.id)
+      // && image.userId === req.user.id
+      if (image !== null) {
+        if (image.userId === req.user.id) {
+          console.log('innanför')
+          const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-type': 'application/json',
+              'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+            },
+            body: JSON.stringify(req.body)
+          })
+          if (fetchedData) {
+            const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
+            await patchImage.save()
+          }
+        } else {
+          const err = createError(403)
+          next(err)
+        }
+      } else {
+        const err = createError(404)
+        next(err)
+      }
+    } catch (error) {
+      const err = createError(500)
+      next(err)
+    }
+  }
+
+  /**
+   * Delete an image.
    *
    * @param {object} req - Express request object.
    * @param {object} res  - Express respons object.
@@ -158,7 +201,8 @@ export class ImageController {
             body: JSON.stringify(req.params.id)
           })
           if (fetchedData) {
-            await Image.findOneAndDelete({ id: req.params.id })
+            await Image.findByIdAndDelete(image.id)
+            // await Image.findOneAndDelete({ id: req.params.id })
             res.sendStatus(204)
           }
         } else {

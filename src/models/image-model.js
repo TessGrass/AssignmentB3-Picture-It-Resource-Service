@@ -10,6 +10,7 @@ const imageSchema = new Schema({
   userId: {
     type: String,
     required: true,
+    immutable: true,
     trim: true
   },
   imgId: {
@@ -20,12 +21,18 @@ const imageSchema = new Schema({
   imgUrl: {
     type: String,
     required: true,
+    immutable: true,
+    trim: true
+  },
+  description: {
+    type: String,
     trim: true
   },
   contentType: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    enum: ['image/gif', 'image/jpeg', 'image/png']
   }
 }, {
   timestamps: true,
