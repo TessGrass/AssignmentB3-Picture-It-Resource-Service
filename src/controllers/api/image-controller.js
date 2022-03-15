@@ -45,27 +45,26 @@ export class ImageController {
    */
   async authorizeUser (req, res, next) {
     console.log('----authorizeUser-----')
-    if (req.body.contentType === undefined || req.body.data === undefined) {
+    /* if (req.body.contentType === undefined || req.body.data === undefined) {
       const err = createError(400)
       next(err)
-    } else {
-      const image = await Image.findOne({ imgId: req.params.id })
-      if (image !== null) {
-        if (image.userId === req.user.id) {
-          console.log('userid stämmer överens')
-        } else {
-          console.log('403 i authorize')
-          const err = createError(403)
-          next(err)
-        }
+    } else { */
+    const image = await Image.findOne({ imgId: req.params.id })
+    if (image !== null) {
+      if (image.userId === req.user.id) {
+        console.log('userid stämmer överens')
       } else {
-        console.log('404 i authorize')
-        const err = createError(404)
+        console.log('403 i authorize')
+        const err = createError(403)
         next(err)
       }
-      res.locals.image = image
-      next()
+    } else {
+      console.log('404 i authorize')
+      const err = createError(404)
+      next(err)
     }
+    res.locals.image = image
+    next()
   }
 
   /**
@@ -83,7 +82,8 @@ export class ImageController {
         .status(200)
         .json(usersImages)
     } catch (error) {
-      next(error)
+      const err = createError(500)
+      next(err)
     }
   }
 
@@ -118,7 +118,8 @@ export class ImageController {
         next(err)
       } */
     } catch (error) {
-      next(error)
+      const err = createError(500)
+      next(err)
     }
   }
 
@@ -177,26 +178,30 @@ export class ImageController {
   async patchImage (req, res, next) {
     try {
       console.log('-----patchImage-----')
-      console.log(req.params)
-      const image = res.locals.image
-      /* const image = await Image.findOne({ imgId: req.params.id })
-      console.log(image) */
-      /* if (image !== null) {
-        if (image.userId === req.user.id) { */
-      const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-type': 'application/json',
-          'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
-        },
-        body: JSON.stringify(req.body)
-      })
-      if (fetchedData) {
-        const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
-        await patchImage.save()
-        res.sendStatus(204)
-      }
-    /* } else {
+      if (req.body.contentType === undefined || req.body.data === undefined) {
+        const err = createError(400)
+        next(err)
+      } else {
+        console.log(req.params)
+        const image = res.locals.image
+        /* const image = await Image.findOne({ imgId: req.params.id })
+        console.log(image) */
+        /* if (image !== null) {
+          if (image.userId === req.user.id) { */
+        const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-type': 'application/json',
+            'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+          },
+          body: JSON.stringify(req.body)
+        })
+        if (fetchedData) {
+          const patchImage = await Image.findByIdAndUpdate(image.id, req.body)
+          await patchImage.save()
+          res.sendStatus(204)
+        }
+      /* } else {
           const err = createError(403)
           next(err)
         }
@@ -204,6 +209,7 @@ export class ImageController {
         const err = createError(404)
         next(err)
       } */
+      }
     } catch (error) {
       const err = createError(500)
       next(err)

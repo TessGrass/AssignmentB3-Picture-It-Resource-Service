@@ -9,17 +9,12 @@ try {
 
   const app = express()
 
-  // Set various HTTP headers to make the application little more secure (https://www.npmjs.com/package/helmet).
   app.use(helmet())
 
-  // Set up a morgan logger using the dev format for log entries.
   app.use(logger('dev'))
 
-  // Parse requests of the content type application/json.
-  // app.use(express.json())
   app.use(express.json({ limit: '500kb' }))
 
-  // Register routes.
   app.use('/', router)
   app.use(function (err, req, res, next) {
     console.log('-----inside error in server.js-----')
