@@ -17,7 +17,6 @@ try {
 
   app.use('/', router)
   app.use(function (err, req, res, next) {
-    console.log('-----inside error in server.js-----')
     if (err.status === 400) {
       res.status(400).json({ status_code: 400, message: 'The request cannot or will not be processed due to something that is perceived to be a client error (for example, validation error.' })
     } else if (err.status === 401) {
@@ -38,23 +37,6 @@ try {
           message: err.message
         })
     }
-
-    // Development only!
-    // Only providing detailed error in development.
-    /* return res
-      .status(err.status)
-      .json({
-        status: err.status,
-        message: err.message,
-        cause: err.cause
-          ? {
-              status: err.cause.status,
-              message: err.cause.message,
-              stack: err.cause.stack
-            }
-          : null,
-        stack: err.stack
-      }) */
   })
 
   // Starts the HTTP server listening for connections.

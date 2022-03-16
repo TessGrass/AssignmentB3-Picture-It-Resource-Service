@@ -15,7 +15,6 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   authenticateJWT (req, res, next) {
-    console.log('-----authenticateJWT-----')
     try {
       const publicKey = Buffer.from(process.env.ACCESS_TOKEN_PUBLIC, 'base64')
       const authorization = req.headers.authorization?.split(' ')
@@ -44,7 +43,6 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async authorizeUser (req, res, next) {
-    console.log('----authorizeUser-----')
     const image = await Image.findOne({ imgId: req.params.id })
     if (image !== null) {
       if (image.userId === req.user.id) {
@@ -69,7 +67,6 @@ export class ImageController {
    */
   async getAllImages (req, res, next) {
     try {
-      console.log('----getAllImages-----')
       const usersImages = await Image.find({ userId: req.user.id })
       res
         .status(200)
@@ -89,7 +86,6 @@ export class ImageController {
    */
   async getSpecificImage (req, res, next) {
     try {
-      console.log('-----getSingleImage------')
       const image = await Image.find({ imgId: req.image.imgId })
       res
         .status(200)
@@ -108,7 +104,6 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async postImage (req, res, next) {
-    console.log('-----postImage-----')
     try {
       const imgData = {
         data: req.body.data,
@@ -156,30 +151,19 @@ export class ImageController {
    */
   async patchImage (req, res, next) {
     try {
-      console.log('-----patchImage-----')
-      if (req.body.contentType === undefined || req.body.data === undefined) {
-        const err = createError(400)
-        next(err)
-      } else {
-        const image = req.image
-        const body = {
-          data: req.body.data,
-          contentType: req.body.contentType,
-          description: req.body.description ? req.body.description : ''
-        }
-        const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-type': 'application/json',
-            'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
-          },
-          body: JSON.stringify(req.body)
-        })
-        if (fetchedData) {
-          const patchImage = await Image.findByIdAndUpdate(image.id, body, { runValidators: true })
-          await patchImage.save()
-          res.sendStatus(204)
-        }
+      const image = req.image
+      const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-type': 'application/json',
+          'x-API-Private-Token': `${process.env.PERSONAL_TOKEN_SECRET}`
+        },
+        body: JSON.stringify(req.body)
+      })
+      if (fetchedData) {
+        const patchImage = await Image.findByIdAndUpdate(image.id, req.body, { runValidators: true })
+        await patchImage.save()
+        res.sendStatus(204)
       }
     } catch (err) {
       let error = err
@@ -200,7 +184,6 @@ export class ImageController {
    * @param {Function} next - Express next middleware function.
    */
   async putImage (req, res, next) {
-    console.log('-----putImage-----')
     try {
       if (req.body.contentType === undefined || req.body.data === undefined) {
         const err = createError(400)
@@ -247,7 +230,6 @@ export class ImageController {
   async deleteSpecificImage (req, res, next) {
     try {
       const image = req.image
-      console.log('-----deleteSpecificImage-----')
       const fetchedData = await fetch(`https://courselab.lnu.se/picture-it/images/api/v1/images/${req.params.id}`, {
         method: 'DELETE',
         headers: {
