@@ -56,18 +56,4 @@ imageSchema.virtual('id').get(function () {
   return this._id.toHexString()
 })
 
-/* *
- * Authenticates username and password.
- *
- * @param {object} username  - The username from the login attempt field.
- * @param {object} password  - The password from the login attempt field.
- * @returns {object} user that matches username.
- */
-/* imageSchema.statics.authenticate = async function (username, password) {
-  const user = await this.findOne({ username })
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new Error('Invalid login attempt.')
-  }
-  return user
-} */
 export const Image = mongoose.model('image', imageSchema)
